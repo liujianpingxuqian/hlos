@@ -25,9 +25,9 @@
 void outb(uint16_t port, uint8_t value);
 
 // 端口读一个字节
-uint8_t inb(uint16_t port);
+u8 inb(uint16_t addr);
 
 // 端口读一个字
-uint16_t inw(uint16_t port);
+u16 inw(uint16_t addr);
 
 #endif // INCLUDE_COMMON_H_

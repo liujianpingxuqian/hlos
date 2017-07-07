@@ -19,7 +19,7 @@
 #ifndef INCLUDE_GDT_H_
 #define INCLUDE_GDT_H_
 
-#include "types.h"
+#include <types.h>
 
 // 全局描述符类型
 typedef

@@ -19,7 +19,7 @@
 #ifndef INCLUDE_IDT_H_
 #define INCLUDE_IDT_H_
 
-#include "types.h"
+#include <types.h>
 
 // 初始化中断描述符表
 void init_idt();

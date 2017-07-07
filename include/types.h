@@ -19,20 +19,39 @@
 #ifndef INCLUDE_TYPES_H_
 #define INCLUDE_TYPES_H_
 
-#ifndef NULL
-	#define NULL 0
-#endif
+#include <stddef.h>
 
-#ifndef TRUE
-	#define TRUE  1
-	#define FALSE 0
-#endif
+/* 32bit platform */
+typedef unsigned int 	size_t;
 
-typedef unsigned int   uint32_t;
-typedef          int   int32_t;
-typedef unsigned short uint16_t;
-typedef          short int16_t;
-typedef unsigned char  uint8_t;
-typedef          char  int8_t;
+/* short type defined */
+typedef signed char s8;
+typedef unsigned char u8;
 
+typedef signed short s16;
+typedef unsigned short u16;
+
+typedef signed int s32;
+typedef unsigned int u32;
+
+/* signed and unsigned bits */
+typedef __signed__ char __s8;
+typedef unsigned char __u8;
+
+typedef __signed__ short __s16;
+typedef unsigned short __u16;
+
+typedef __signed__ int __s32;
+typedef unsigned int __u32;
+
+typedef		__u8		u_int8_t;
+typedef		__s8		int8_t;
+typedef		__u16		u_int16_t;
+typedef		__s16		int16_t;
+typedef		__u32		u_int32_t;
+typedef		__s32		int32_t;
+
+typedef		__u8		uint8_t;
+typedef		__u16		uint16_t;
+typedef		__u32		uint32_t;
 #endif 	// INCLUDE_TYPES_H_

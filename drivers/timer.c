@@ -16,10 +16,10 @@
  * =====================================================================================
  */
 
-#include "timer.h"
-#include "debug.h"
-#include "common.h"
-#include "idt.h"
+#include <timer.h>
+#include <debug.h>
+#include <common.h>
+#include <idt.h>
 
 void timer_callback(pt_regs *regs)
 {

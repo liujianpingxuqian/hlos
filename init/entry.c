@@ -16,11 +16,11 @@
  * =====================================================================================
  */
 
-#include "console.h"
-#include "debug.h"
-#include "gdt.h"
-#include "idt.h"
-#include "timer.h"
+#include <console.h>
+#include <debug.h>
+#include <gdt.h>
+#include <idt.h>
+#include <timer.h>
 
 int kern_entry()
 {

@@ -16,9 +16,9 @@
  * =====================================================================================
  */
 
-#include "common.h"
-#include "string.h"
-#include "elf.h"
+#include <common.h>
+#include <string.h>
+#include <elf.h>
 
 // 从 multiboot_t 结构获取ELF信息
 elf_t elf_from_multiboot(multiboot_t *mb)

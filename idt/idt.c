@@ -16,10 +16,10 @@
  * =====================================================================================
  */
 
-#include "common.h"
-#include "string.h"
-#include "debug.h"
-#include "idt.h"
+#include <common.h>
+#include <string.h>
+#include <debug.h>
+#include <idt.h>
 
 // 中断描述符表
 idt_entry_t idt_entries[256];

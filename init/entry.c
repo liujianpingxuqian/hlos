@@ -16,7 +16,6 @@
  * =====================================================================================
  */
 
-#include <console.h>
 #include <debug.h>
 #include <gdt.h>
 #include <idt.h>
@@ -29,7 +28,7 @@ int kern_entry()
 	init_idt();
 
 	console_clear();
-	printk_color(rc_black, rc_green, "Hello, OS kernel!\n");
+	printk("Hello, OS kernel!\n");
 
 	init_timer(200);
 

@@ -17,15 +17,14 @@
  */
 
 #include <debug.h>
+#include <elf.h>
 
 static void print_stack_trace();
-
-static elf_t kernel_elf;
 
 void init_debug()
 {
 	// 从 GRUB 提供的信息中获取到内核符号表和代码地址信息
-	kernel_elf = elf_from_multiboot(glb_mboot_ptr);
+	load_ksym_from_multiboot(glb_mboot_ptr);
 }
 
 void print_cur_status()
@@ -65,7 +64,7 @@ void print_stack_trace()
 	asm volatile ("mov %%ebp, %0" : "=r" (ebp));
 	while (ebp) {
 		eip = ebp + 1;
-		printk("   [0x%x] %s\n", *eip, elf_lookup_symbol(*eip, &kernel_elf));
+		printk("   [0x%x] %s\n", *eip, ksym_lookup_name(*eip, NULL));
 		ebp = (uint32_t*)*ebp;
 	}
 }

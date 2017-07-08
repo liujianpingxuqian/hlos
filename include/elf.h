@@ -50,19 +50,10 @@ struct elf_symbol_t {
   uint16_t shndx;
 } __attribute__((packed)) elf_symbol_t;
 
-// ELF 信息
-typedef
-struct elf_t {
-  elf_symbol_t *symtab;
-  uint32_t      symtabsz;
-  const char   *strtab;
-  uint32_t      strtabsz;
-} elf_t;
-
-// 从 multiboot_t 结构获取ELF信息
-elf_t elf_from_multiboot(multiboot_t *mb);
+// 从 multiboot_t 结构获取symbol信息
+void load_ksym_from_multiboot(multiboot_t *mb);
 
 // 查看ELF的符号信息
-const char *elf_lookup_symbol(uint32_t addr, elf_t *elf);
+const char *ksym_lookup_name(uint32_t addr, uint32_t *offset);
 
 #endif 	// INCLUDE_ELF_H_

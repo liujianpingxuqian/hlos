@@ -21,72 +21,69 @@
 
 #include <types.h>
 
-static inline void memcpy(uint8_t *dest, const uint8_t *src, size_t len)
+extern void * memcpy(void *,const void *,size_t);
+extern void * memset(void *,int,size_t);
+extern void * memmove(void *,const void *,size_t);
+extern void * memscan(void *,int,size_t);
+extern int memcmp(const void *,const void *,size_t);
+extern void * memchr(const void *,int,size_t);
+
+extern bool sysfs_streq(const char *s1, const char *s2);
+extern int strtobool(const char *s, bool *res);
+
+
+extern char * strcpy(char *,const char *);
+extern char * strncpy(char *,const char *, size_t);
+size_t strlcpy(char *, const char *, size_t);
+extern char * strcat(char *, const char *);
+extern char * strncat(char *, const char *, size_t);
+extern size_t strlcat(char *, const char *, size_t);
+extern int strcmp(const char *cs, const char *ct);
+extern int strncmp(const char *,const char *,size_t);
+extern int strnicmp(const char *, const char *, size_t);
+extern int strcasecmp(const char *s1, const char *s2);
+extern int strncasecmp(const char *s1, const char *s2, size_t n);
+extern char * strchr(const char *,int);
+extern char * strnchr(const char *, size_t, int);
+extern char * strrchr(const char *,int);
+extern char * skip_spaces(const char *);
+extern char *strim(char *);
+extern char * strstr(const char *, const char *);
+extern char * strnstr(const char *, const char *, size_t);
+extern size_t strlen(const char *);
+extern size_t strnlen(const char *,size_t);
+extern char * strpbrk(const char *,const char *);
+extern char * strsep(char **,const char *);
+extern size_t strspn(const char *,const char *);
+extern size_t strcspn(const char *,const char *);
+
+static inline char *strstrip(char *str)
 {
-	for (; len != 0; len--) {
-		*dest++ = *src++;
-	}
+	return strim(str);
 }
-
-static inline void memset(void *dest, uint8_t val, size_t len)
-{
-	uint8_t *dst = (uint8_t *)dest;
-
-	for ( ; len != 0; len--) {
-		*dst++ = val;
-	}
-}
-
 static inline void bzero(void *dest, size_t len)
 {
 	memset(dest, 0, len);
 }
-
-static inline int strcmp(const char *str1, const char *str2)
+/**
+ * strstarts - does @str start with @prefix?
+ * @str: string to examine
+ * @prefix: prefix to look for.
+ */
+static inline bool strstarts(const char *str, const char *prefix)
 {
-    while (*str1 && *str2 && *str1 == *str2) {
-        str1++;
-        str2++;
-    }
-
-    return *str1 - *str2;
+	return strncmp(str, prefix, strlen(prefix)) == 0;
 }
 
-static inline char *strcpy(char *dest, const char *src)
+/**
+ * kbasename - return the last part of a pathname.
+ *
+ * @path: path to extract the filename from.
+ */
+static inline const char *kbasename(const char *path)
 {
-	char *tmp = dest;
-
-	while (*src) {
-	      *dest++ = *src++;
-	}
-
-	*dest = '\0';
-
-	return tmp;
-}
-
-static inline char *strcat(char *dest, const char *src)
-{
-	char *cp = dest;
-
-	while (*cp) {
-	      cp++;
-	}
-
-	while ((*cp++ = *src++))
-	      ;
-
-	return dest;
-}
-
-static inline int strlen(const char *src)
-{
-	const char *eos = src;
-
-        while (*eos++)
-	      ;
-
-	return (eos - src - 1);
+	const char *tail = strrchr(path, '/');
+	return tail ? tail + 1 : path;
 }
 
 #endif 	// INCLUDE_STRING_H_

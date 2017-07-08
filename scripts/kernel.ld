@@ -29,11 +29,13 @@ SECTIONS
 {
 	. = 0x100000;
 
+        PROVIDE(kern_text_start = .);
 	.text :
 	{
 		*(.text)
 		. = ALIGN(4096);
 	}
+        PROVIDE(kern_text_end = .);
 	.data :
 	{
 		*(.data)

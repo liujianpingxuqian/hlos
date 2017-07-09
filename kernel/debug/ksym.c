@@ -16,9 +16,38 @@
  * =====================================================================================
  */
 
-#include <common.h>
 #include <string.h>
-#include <elf.h>
+#include <multiboot.h>
+#include <debug.h>
+
+#define ELF32_ST_TYPE(i) ((i)&0xf)
+
+// ELF 格式区段头
+typedef
+struct elf_section_header_t {
+  uint32_t name;
+  uint32_t type;
+  uint32_t flags;
+  uint32_t addr;
+  uint32_t offset;
+  uint32_t size;
+  uint32_t link;
+  uint32_t info;
+  uint32_t addralign;
+  uint32_t entsize;
+} __attribute__((packed)) elf_section_header_t;
+
+// ELF 格式符号
+typedef
+struct elf_symbol_t {
+  uint32_t name;
+  uint32_t value;
+  uint32_t size;
+  uint8_t  info;
+  uint8_t  other;
+  uint16_t shndx;
+} __attribute__((packed)) elf_symbol_t;
+
 
 #define KALLSYMS_NUM_MAX	1024
 static unsigned int kallsyms_num;
@@ -28,7 +57,7 @@ static uint32_t kallsyms_name[KALLSYMS_NUM_MAX];
 extern uint8_t kern_text_start[];
 extern uint8_t kern_text_end[];
 
-bool is_kernel_text(uint32_t addr)
+static bool is_kernel_text(uint32_t addr)
 {
 	if (addr > kern_text_start && addr < kern_text_end)
 		return true;
@@ -36,7 +65,7 @@ bool is_kernel_text(uint32_t addr)
 	return false;
 }
 // 从 multiboot_t 结构获取ELF信息
-void load_ksym_from_multiboot(multiboot_t *mb)
+static void load_ksym_from_multiboot(multiboot_t *mb)
 {
 	int i, symtab_size;
 	const char *strtab_offset;
@@ -121,12 +150,61 @@ static unsigned int get_symbol_pos(uint32_t addr, uint32_t *offset)
 }
 
 /* lookup symbol name string by address */
-const char *ksym_lookup_name(uint32_t addr, uint32_t *offset)
+static const char *ksym_lookup_name(uint32_t addr, uint32_t *offset)
 {
 	unsigned int idx;
 
 	idx = get_symbol_pos(addr, offset);
 
 	return (const char *)kallsyms_name[idx];
+}
+
+static void print_stack_trace()
+{
+	uint32_t *ebp, *eip;
+
+	asm volatile ("mov %%ebp, %0" : "=r" (ebp));
+	while (ebp) {
+		eip = ebp + 1;
+		printk("   [0x%x] %s\n", *eip, ksym_lookup_name(*eip, NULL));
+		ebp = (uint32_t*)*ebp;
+	}
+}
+
+/* Debug API bellow */
+void init_debug()
+{
+	// 从 GRUB 提供的信息中获取到内核符号表和代码地址信息
+	load_ksym_from_multiboot(glb_mboot_ptr);
+}
+
+void print_cur_status()
+{
+	static int round = 0;
+	uint16_t reg1, reg2, reg3, reg4;
+
+	asm volatile ( 	"mov %%cs, %0;"
+			"mov %%ds, %1;"
+			"mov %%es, %2;"
+			"mov %%ss, %3;"
+			: "=m"(reg1), "=m"(reg2), "=m"(reg3), "=m"(reg4));
+
+	// 打印当前的运行级别
+	printk("%d: @ring %d\n", round, reg1 & 0x3);
+	printk("%d:  cs = %x\n", round, reg1);
+	printk("%d:  ds = %x\n", round, reg2);
+	printk("%d:  es = %x\n", round, reg3);
+	printk("%d:  ss = %x\n", round, reg4);
+	++round;
+}
+
+void panic(const char *msg)
+{
+	printk("*** System panic: %s\n", msg);
+	print_stack_trace();
+	printk("***\n");
+
+	// 致命错误发生后打印栈信息后停止在这里
+	while(1);
 }
 

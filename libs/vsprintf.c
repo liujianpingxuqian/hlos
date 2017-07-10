@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <string.h>
-#include <debug.h>
+#include <printk.h>
+#include <console.h>
 
 #define noinline_for_stack
 

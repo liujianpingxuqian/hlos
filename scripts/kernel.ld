@@ -29,6 +29,7 @@ SECTIONS
 {
 	. = 0x100000;
 
+        PROVIDE(kern_start = .);
         PROVIDE(kern_text_start = .);
 	.text :
 	{
@@ -36,12 +37,14 @@ SECTIONS
 		. = ALIGN(4096);
 	}
         PROVIDE(kern_text_end = .);
+        PROVIDE(kern_data_start = .);
 	.data :
 	{
 		*(.data)
 		*(.rodata)
 		. = ALIGN(4096);
 	}
+        PROVIDE(kern_data_end = .);
 	.bss :
 	{
 		*(.bss)
@@ -57,6 +60,7 @@ SECTIONS
 		*(.stabstr)
 	 	. = ALIGN(4096);
 	}
+        PROVIDE(kern_end = .);
 	
 	/DISCARD/ : { *(.comment) *(.eh_frame) }
 }

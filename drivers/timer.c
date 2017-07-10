@@ -17,7 +17,7 @@
  */
 
 #include <timer.h>
-#include <debug.h>
+#include <printk.h>
 #include <common.h>
 #include <idt.h>
 

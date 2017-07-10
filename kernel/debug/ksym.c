@@ -19,6 +19,7 @@
 #include <string.h>
 #include <multiboot.h>
 #include <debug.h>
+#include <printk.h>
 
 #define ELF32_ST_TYPE(i) ((i)&0xf)
 
@@ -54,12 +55,9 @@ static unsigned int kallsyms_num;
 static uint32_t kallsyms_addr[KALLSYMS_NUM_MAX];
 static uint32_t kallsyms_name[KALLSYMS_NUM_MAX];
 
-extern uint8_t kern_text_start[];
-extern uint8_t kern_text_end[];
-
 static bool is_kernel_text(uint32_t addr)
 {
-	if (addr > kern_text_start && addr < kern_text_end)
+	if (addr > (uint32_t)kern_text_start && addr < (uint32_t)kern_text_end)
 		return true;
 
 	return false;
@@ -121,7 +119,7 @@ static void load_ksym_from_multiboot(multiboot_t *mb)
 static unsigned int get_symbol_pos(uint32_t addr, uint32_t *offset)
 {
 	uint32_t symbol_start = 0;
-	unsigned int i, low, high, mid;
+	unsigned int low, high, mid;
 
 	/* Do a binary search on the sorted kallsyms_addresses array. */
 	low = 0;

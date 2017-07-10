@@ -19,8 +19,7 @@
 #ifndef INCLUDE_DEBUG_H_
 #define INCLUDE_DEBUG_H_
 
-#include <console.h>
-#include <vargs.h>
+#include <types.h>
 
 #define assert(x, info)                                       	\
 	do {                                                	\
@@ -35,6 +34,14 @@
 
 #define BUG_ON(condition) do { if (condition) panic("BUG"); } while(0)
 
+/* link script pointer for section */
+extern uint8_t kern_start[];
+extern uint8_t kern_end[];
+extern uint8_t kern_text_start[];
+extern uint8_t kern_text_end[];
+extern uint8_t kern_data_start[];
+extern uint8_t kern_data_end[];
+
 // 初始化 Debug 信息
 void init_debug();
 
@@ -42,10 +49,5 @@ void print_cur_status();
 
 // 打印当前的函数调用栈信息
 void panic(const char *msg);
-
-int snprintf(char *buf, size_t size, const char *fmt, ...);
-int sprintf(char *buf, const char *fmt, ...);
-int vscnprintf(char *buf, size_t size, const char *fmt, va_list args);
-int printk(const char *fmt, ...);
 
 #endif 	// INCLUDE_DEBUG_H_

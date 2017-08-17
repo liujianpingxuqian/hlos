@@ -37,7 +37,6 @@ static void show_pmm_map()
 
 void init_pmm()
 {
-	uint32_t i;
 	mmap_entry_t *mmap;
 	uint32_t mmap_len = (uint32_t)glb_mboot_ptr->mmap_length;
 	uint32_t mmap_addr = (uint32_t)glb_mboot_ptr->mmap_addr;

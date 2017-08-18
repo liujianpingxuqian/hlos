@@ -35,6 +35,33 @@ static void show_pmm_map()
 	printk("\n");
 }
 
+/* Page Frame Number to Page Struct */
+struct page *pfn_to_page(uint32_t pfn)
+{
+	BUG_ON(pfn >= phy_page_count);
+
+	return phy_pages + pfn;
+}
+
+uint32_t page_to_pfn(struct page *page)
+{
+	return page - phy_pages;
+}
+
+struct page *phy_to_page(uint32_t addr)
+{
+	/* out of phy memory range */
+	BUG_ON(addr < phy_page_start || addr > max_phy_addr);
+
+	/* align to 4K by page mask */
+	return pfn_to_page(((addr & PAGE_MASK) - phy_page_start)>>12);
+}
+
+uint32_t page_to_phy(struct page *page)
+{
+	return phy_page_start + (page_to_pfn(page)<<12);
+}
+
 void init_pmm()
 {
 	mmap_entry_t *mmap;
@@ -64,17 +91,22 @@ void init_pmm()
 
 }
 
-struct page *phy_to_page(uint32_t addr)
-{
-	/* out of phy memory range */
-	BUG_ON(addr < phy_page_start || addr > max_phy_addr);
+#define MAX_ORDER	11
 
-	return (struct page *)((uint32_t)phy_pages + (((addr & PAGE_MASK) - phy_page_start)>>12));
+void pmm_free_pages(void)
+{
+	uint32_t p_idx = 0;
+	uint16_t p_order = MAX_ORDER - 1;
+
+	/* free phy_page_count pages to buddy */
+	while(p_idx < phy_page_count) {
+		uint32_t p_left = phy_page_count - p_idx;
+		if (p_left > (1<<p_order)) {
+			//free_pages(&phy_pages[p_idx], p_order);	
+			p_idx += 1<<p_order;
+		} else
+			p_order --;
+	}
 }
 
-uint32_t page_to_phy(struct page *page)
-{
-	BUG_ON(page - phy_pages >= phy_page_count);
 
-	return phy_page_start + ((page - phy_pages)<<12);
-}

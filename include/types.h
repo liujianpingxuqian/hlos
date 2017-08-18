@@ -68,4 +68,21 @@ typedef		__u32		uint32_t;
 typedef		__u64		uint64_t;
 typedef		__u64		u_int64_t;
 typedef		__s64		int64_t;
+
+struct list_head {
+	struct list_head *prev, *next;
+};
+
+struct hlist_node {
+	struct hlist_node *next, **pprev;
+};
+
+struct hlist_head {
+	struct hlist_node *first;
+};
+
+typedef struct {
+	int counter;
+} atomic_t;
+
 #endif 	// INCLUDE_TYPES_H_

@@ -1,6 +1,7 @@
 #ifndef INCLUDE_PRINTK_H_
 #define INCLUDE_PRINTK_H_
 
+#include <types.h>
 #include <vargs.h>
 
 int snprintf(char *buf, size_t size, const char *fmt, ...);

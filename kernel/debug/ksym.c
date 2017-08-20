@@ -16,10 +16,12 @@
  * =====================================================================================
  */
 
+#include <pmm.h>
 #include <string.h>
 #include <multiboot.h>
 #include <debug.h>
 #include <printk.h>
+#include <page.h>
 
 #define ELF32_ST_TYPE(i) ((i)&0xf)
 
@@ -57,7 +59,7 @@ static uint32_t kallsyms_name[KALLSYMS_NUM_MAX];
 
 static bool is_kernel_text(uint32_t addr)
 {
-	if (addr > (uint32_t)kern_text_start && addr < (uint32_t)kern_text_end)
+	if (addr > (uint32_t)kern_text_start + PAGE_OFFSET && addr < (uint32_t)kern_text_end + PAGE_OFFSET)
 		return true;
 
 	return false;
@@ -65,22 +67,27 @@ static bool is_kernel_text(uint32_t addr)
 // 从 multiboot_t 结构获取ELF信息
 static void load_ksym_from_multiboot(multiboot_t *mb)
 {
-	int i, symtab_size;
+	int i, symtab_size = 0;
 	const char *strtab_offset;
 	elf_symbol_t *ksymtab;
-	elf_section_header_t *sh = (elf_section_header_t *)mb->addr;
+	elf_section_header_t *sh = (elf_section_header_t *)(mb->addr + PAGE_OFFSET);
 	/* offset of section header name strings table */
-	uint32_t shstrtab = sh[mb->shndx].addr;
+	uint32_t shstrtab = sh[mb->shndx].addr + PAGE_OFFSET;
+
+	printk("ELE Header: 0x%08X, STRTAB: 0x%08X\n", sh, shstrtab);
 
 	for (i = 0; i < mb->num; i++) {
 		const char *name = (const char *)(shstrtab + sh[i].name);
 		// 在 GRUB 提供的 multiboot 信息中寻找内核 ELF 格式所提取的字符串表和符号表
-		if (strcmp(name, ".strtab") == 0)
-			strtab_offset = (const char *)sh[i].addr;
+		if (strcmp(name, ".strtab") == 0) {
+			strtab_offset = (const char *)sh[i].addr + PAGE_OFFSET;
+			printk("ELF STRTAB offset 0x%08X\n", strtab_offset);
+		}
 
 		if (strcmp(name, ".symtab") == 0) {
-			ksymtab = (elf_symbol_t *)sh[i].addr;
+			ksymtab = (elf_symbol_t *)(sh[i].addr + PAGE_OFFSET);
 			symtab_size = sh[i].size / sizeof(elf_symbol_t);
+			printk("ELF KSYMTAB offset 0x%08X, size 0x%X\n", ksymtab, symtab_size);
 		}
 	}
 
@@ -89,10 +96,11 @@ static void load_ksym_from_multiboot(multiboot_t *mb)
 		if (is_kernel_text(ksymtab[i].value)) {
 			kallsyms_addr[kallsyms_num] = ksymtab[i].value;
 			kallsyms_name[kallsyms_num] = (uint32_t)strtab_offset + ksymtab[i].name;
+			//printk("%d [0x%08X] %s\n", kallsyms_num, kallsyms_addr[kallsyms_num], (const char *)kallsyms_name[kallsyms_num]);
 			kallsyms_num ++;
-			//printk("[0x%08x] %s\n", kallsyms_addr[i], (const char *)kallsyms_name[i]);
 		}
 	}
+	printk("ksym_num %d\n", kallsyms_num);
 	
 	/* sort symbol address */
 	for (i = 0; i < kallsyms_num; i++) {
@@ -204,5 +212,37 @@ void panic(const char *msg)
 
 	// 致命错误发生后打印栈信息后停止在这里
 	while(1);
+}
+
+void show_kernel_memory_map(void)
+{
+        printk("kernel in memory start: 0x%08X\n", kern_start);
+	printk("kernel in memory end:   0x%08X\n", kern_end);
+        
+	printk("\nkernel segment in memory:\n");
+	printk("  .init.text    0x%08X ~ 0x%08X \n", kern_init_text_start, kern_init_text_end);
+	printk("  .init.data    0x%08X ~ 0x%08X \n", kern_init_data_start, kern_init_data_end);
+	printk("  .text         0x%08X ~ 0x%08X \n", kern_text_start, kern_text_end);
+	printk("  .data         0x%08X ~ 0x%08X \n", kern_data_start, kern_data_end);
+        
+	printk("\nkernel in memory used: %d KB = %d Pages\n\n",
+                        (kern_end - kern_start) / 1024, (kern_end - kern_start) / 1024 / 4);
+}
+
+void show_memory_map(void)
+{
+        uint32_t mmap_addr = glb_mboot_ptr->mmap_addr;
+        uint32_t mmap_length = glb_mboot_ptr->mmap_length;
+
+        printk("Memory map:\n\n");
+
+        mmap_entry_t *mmap = (mmap_entry_t *)mmap_addr;
+        for (mmap = (mmap_entry_t *)mmap_addr; (uint32_t)mmap < mmap_addr + mmap_length; mmap++) {
+                printk("base_addr = 0x%X%08X, length = 0x%X%08X, type = 0x%X\n",
+                        (uint32_t)mmap->base_addr_high, (uint32_t)mmap->base_addr_low,
+                        (uint32_t)mmap->length_high, (uint32_t)mmap->length_low,
+                        (uint32_t)mmap->type);
+        }
+        printk("\n");
 }
 

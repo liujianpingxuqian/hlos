@@ -24,27 +24,30 @@
 #include <printk.h>
 #include <console.h>
 
-void show_kernel_map(void)
+void test_b()
 {
-	printk("\n");
-	printk("Kernel image : 0x%x --- 0x%x\n", kern_start, kern_end);
-	printk("Kernel Text  : 0x%x --- 0x%x\n", kern_text_start, kern_text_end);
-	printk("Kernel Data  : 0x%x --- 0x%x\n", kern_data_start, kern_data_end);
-	printk("Kernel Size is %d KB\n", (kern_end - kern_start)>>10);
-	printk("\n");
+	panic("oops: ");
+}
+
+int abc()
+{
+	test_b();
+	return 0;
 }
 
 int kern_init()
 {
-	//init_debug();
 	//init_gdt();
 	//init_idt();
 
 	console_clear();
+	init_debug();
 	printk("Hello, OS kernel!\n");
 
-	show_kernel_map();
+	//show_kernel_memory_map();
+	//show_memory_map();
 
+	test_b();
 	while(true) {
 		;
 	}

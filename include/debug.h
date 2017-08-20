@@ -34,18 +34,12 @@
 
 #define BUG_ON(condition) do { if (condition) panic("BUG"); } while(0)
 
-/* link script pointer for section */
-extern uint8_t kern_start[];
-extern uint8_t kern_end[];
-extern uint8_t kern_text_start[];
-extern uint8_t kern_text_end[];
-extern uint8_t kern_data_start[];
-extern uint8_t kern_data_end[];
-
 // 初始化 Debug 信息
 void init_debug();
 
 void print_cur_status();
+void show_kernel_memory_map(void);
+void show_memory_map(void);
 
 // 打印当前的函数调用栈信息
 void panic(const char *msg);

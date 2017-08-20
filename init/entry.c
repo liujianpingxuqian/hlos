@@ -37,16 +37,17 @@ int kern_init()
 	show_kernel_memory_map();
 	show_memory_map();
 
-	while(true) {
-		;
-	}
 
 	//init_pmm();
 
-	//init_timer(200);
+	init_timer(200);
 
 	// 开启中断
-	//asm volatile ("sti");
+	asm volatile ("sti");
+
+	while(true) {
+		;
+	}
 
 	return 0;
 }

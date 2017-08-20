@@ -24,30 +24,19 @@
 #include <printk.h>
 #include <console.h>
 
-void test_b()
-{
-	panic("oops: ");
-}
-
-int abc()
-{
-	test_b();
-	return 0;
-}
 
 int kern_init()
 {
-	//init_gdt();
-	//init_idt();
+	init_gdt();
+	init_idt();
 
 	console_clear();
 	init_debug();
 	printk("Hello, OS kernel!\n");
 
-	//show_kernel_memory_map();
-	//show_memory_map();
+	show_kernel_memory_map();
+	show_memory_map();
 
-	test_b();
 	while(true) {
 		;
 	}

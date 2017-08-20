@@ -69,6 +69,10 @@ typedef		__u64		uint64_t;
 typedef		__u64		u_int64_t;
 typedef		__s64		int64_t;
 
+/* page type */
+typedef uint32_t pgd_t;
+typedef uint32_t pte_t;
+
 struct list_head {
 	struct list_head *prev, *next;
 };

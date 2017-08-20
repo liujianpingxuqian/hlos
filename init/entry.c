@@ -34,20 +34,24 @@ void show_kernel_map(void)
 	printk("\n");
 }
 
-int kern_entry()
+int kern_init()
 {
-	init_debug();
-	init_gdt();
-	init_idt();
+	//init_debug();
+	//init_gdt();
+	//init_idt();
 
 	console_clear();
 	printk("Hello, OS kernel!\n");
 
 	show_kernel_map();
 
-	init_pmm();
+	while(true) {
+		;
+	}
 
-	init_timer(200);
+	//init_pmm();
+
+	//init_timer(200);
 
 	// 开启中断
 	//asm volatile ("sti");

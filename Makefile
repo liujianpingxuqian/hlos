@@ -58,7 +58,7 @@ umount_image:
 
 .PHONY:qemu
 qemu:
-	qemu -fda floppy.img -boot a
+	qemu -m 128M -fda floppy.img -boot a
 
 .PHONY:bochs
 bochs:
@@ -66,7 +66,7 @@ bochs:
 
 .PHONY:debug
 debug:
-	qemu -S -s -fda floppy.img -boot a &
+	qemu -S -s -m 128M -fda floppy.img -boot a &
 	sleep 1
 	cgdb -x scripts/gdbinit
 

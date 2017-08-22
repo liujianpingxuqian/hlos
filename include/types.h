@@ -38,8 +38,8 @@ typedef unsigned short u16;
 typedef signed int s32;
 typedef unsigned int u32;
 
-typedef signed long s64;
-typedef unsigned long u64;
+typedef signed long long s64;
+typedef unsigned long long u64;
 
 /* signed and unsigned bits */
 typedef __signed__ char __s8;
@@ -51,8 +51,8 @@ typedef unsigned short __u16;
 typedef __signed__ int __s32;
 typedef unsigned int __u32;
 
-typedef __signed__ long __s64;
-typedef unsigned long __u64;
+typedef __signed__ long long __s64;
+typedef unsigned long long __u64;
 
 typedef		__u8		u_int8_t;
 typedef		__s8		int8_t;

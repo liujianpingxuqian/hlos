@@ -48,4 +48,11 @@ struct page {
 	struct list_head lru;
 };
 
+struct page *pfn_to_page(uint32_t pfn);
+uint32_t page_to_pfn(struct page *page);
+
+/* API of buddy for page mangerment */
+void free_pages(struct page *page, uint16_t order);
+struct page *alloc_page(uint16_t order);
+
 #endif

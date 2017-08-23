@@ -3,7 +3,7 @@
 #include <printk.h>
 #include <pmm.h>
 #include <string.h>
-
+#include <page.h>
 
 /* page frame arrary start at kernel end */
 static struct page *phy_pages;
@@ -48,24 +48,8 @@ void init_pmm()
 
 	printk("Avriable Mem_phy 0x%08X ~~~ 0x%08X\n", min_phy_addr, max_phy_addr);
 	printk("Page Frame start 0x%08X, total count %d\n", phy_pages, phy_page_count);
+
+	/* free pages to buddy system */
+	pmm_free_pages(phy_page_count);
 }
-
-#define MAX_ORDER	11
-
-void pmm_free_pages(void)
-{
-	uint32_t p_idx = 0;
-	uint16_t p_order = MAX_ORDER - 1;
-
-	/* free phy_page_count pages to buddy */
-	while(p_idx < phy_page_count) {
-		uint32_t p_left = phy_page_count - p_idx;
-		if (p_left > (1<<p_order)) {
-			//free_pages(&phy_pages[p_idx], p_order);	
-			p_idx += 1<<p_order;
-		} else
-			p_order --;
-	}
-}
-
 

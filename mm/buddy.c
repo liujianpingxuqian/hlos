@@ -1,7 +1,8 @@
 #include <printk.h>
 #include <list.h>
 #include <atomic.h>
-#include <pmm.h>
+#include <page.h>
+#include <mm.h>
 
 #define MAX_ORDER	11
 
@@ -22,22 +23,6 @@ static struct buddy_mm sys_zone;
 #define page_private(page)		((page)->private)
 #define set_page_private(page, v)	((page)->private = (v))
 
-#define PAGE_BUDDY_MAPCOUNT_VALUE (-128)
-
-static inline int PageBuddy(struct page *page)
-{
-	return atomic_read(&page->_mapcount) == PAGE_BUDDY_MAPCOUNT_VALUE;
-}
-
-static inline void __ClearPageBuddy(struct page *page)
-{
-	atomic_set(&page->_mapcount, -1);
-}
-
-static inline void __SetPageBuddy(struct page *page)
-{
-	atomic_set(&page->_mapcount, PAGE_BUDDY_MAPCOUNT_VALUE);
-}
 
 static inline uint16_t page_order(struct page *page)
 {
@@ -48,38 +33,6 @@ static inline void set_page_order(struct page *page, uint16_t order)
 {
 	set_page_private(page, order);
 	__SetPageBuddy(page);
-}
-
-/*
- * Setup the page count before being freed into the page allocator for
- * the first time (boot or memory hotplug)
- */
-static inline void init_page_count(struct page *page)
-{
-	atomic_set(&page->_count, 1);
-}
-
-static inline int page_count(struct page *page)
-{
-	return atomic_read(&page->_count);
-}
-
-static inline void set_page_count(struct page *page, int v)
-{
-	atomic_set(&page->_count, v);
-}
-
-static inline void get_page(struct page *page)
-{
-	atomic_inc(&page->_count);
-}
-
-/*
- * Drop a ref, return true if the refcount fell to zero (the page has no users)
- */
-static inline int put_page_testzero(struct page *page)
-{
-	return atomic_dec_and_test(&page->_count);
 }
 
 static inline void rmv_page_order(struct page *page)
@@ -147,12 +100,6 @@ static inline void __free_one_page(struct buddy_mm *zone, struct page *page, uin
 	zone->free_area[order].nr_free++;
 }
 
-void free_pages(struct page *page, uint16_t order)
-{
-	if (put_page_testzero(page))
-		__free_one_page(&sys_zone, page, order);
-}
-
 static inline void expand(struct buddy_mm *zone, struct page *page,
 	int low, int high, struct free_area *area)
 {
@@ -197,6 +144,12 @@ struct page *__rmqueue_smallest(struct buddy_mm *zone, unsigned int order)
 	return NULL;
 }
 
+void free_pages(struct page *page, uint16_t order)
+{
+	if (put_page_testzero(page))
+		__free_one_page(&sys_zone, page, order);
+}
+
 struct page *alloc_page(uint16_t order)
 {
 	struct page *page;
@@ -211,7 +164,32 @@ struct page *alloc_page(uint16_t order)
 	return page;
 }
 
-void init_buddy_mm(void)
+static void show_free_area(struct buddy_mm * zone)
+{
+	struct free_area *free_area;
+	uint32_t nr[MAX_ORDER];
+	uint32_t total = 0, order;
+
+	for (order = 0; order < MAX_ORDER; order++) {
+		struct page *page;
+		free_area = &zone->free_area[order];
+
+		if (free_area->nr_free == 0)
+			continue;
+
+		nr[order] = free_area->nr_free;
+		total += nr[order] << order;
+
+		printk("Order(%d) %dKB at ", order, nr[order]<<(order + 2));
+		list_for_each_entry(page, &free_area->free_list, lru)
+			printk("0x%X ", page_to_pfn(page));
+		printk("\n");
+	}
+
+	printk("Total Free Memory %dMB\n", total>>8);
+}
+
+static void init_buddy_mm(void)
 {
 	int i;
 	struct buddy_mm *zone = &sys_zone;
@@ -223,6 +201,41 @@ void init_buddy_mm(void)
 		zone->free_area[i].nr_free = 0;
 		INIT_LIST_HEAD(&zone->free_area[i].free_list);
 	}
+	printk("Init buddy with order %d\n", MAX_ORDER);
 }
 
+void pmm_free_pages(uint32_t page_number)
+{
+	uint32_t p_idx = 0;
+	uint16_t p_order = MAX_ORDER - 1;
+
+	/* init buddy struct */
+	init_buddy_mm();
+
+	/* init pages at first */
+	for (p_idx = 0; p_idx < page_number; p_idx++) {
+		struct page *page;
+
+		page = pfn_to_page(p_idx);
+		init_page_count(page);
+		page_mapcount_reset(page);
+		INIT_LIST_HEAD(&page->lru);
+	}
+	printk("Free %d Pages to Buddy\n", page_number);
+
+	/* free total pages to buddy */
+	p_idx = 0;
+	while(p_idx < page_number) {
+		uint32_t p_left = page_number - p_idx;
+		if (p_left >= (1<<p_order)) {
+			free_pages(pfn_to_page(p_idx), p_order);	
+			//printk("Free page[0x%X] with order %d\n", p_idx, p_order);
+			p_idx += 1<<p_order;
+		} else
+			p_order --;
+	}
+
+	/* show buddy system status */
+	show_free_area(&sys_zone);
+}
 

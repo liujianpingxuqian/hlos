@@ -23,6 +23,7 @@
 #include <debug.h>
 #include <printk.h>
 #include <console.h>
+#include <page.h>
 
 
 int kern_init()
@@ -39,6 +40,10 @@ int kern_init()
 
 
 	init_pmm();
+
+	alloc_page(7);
+	alloc_page(5);
+	show_free_area();
 
 	//init_timer(200);
 

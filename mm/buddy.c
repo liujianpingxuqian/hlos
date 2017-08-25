@@ -164,8 +164,9 @@ struct page *alloc_page(uint16_t order)
 	return page;
 }
 
-static void show_free_area(struct buddy_mm * zone)
+void show_free_area(void)
 {
+	struct buddy_mm *zone = &sys_zone;
 	struct free_area *free_area;
 	uint32_t nr[MAX_ORDER];
 	uint32_t total = 0, order;
@@ -201,7 +202,6 @@ static void init_buddy_mm(void)
 		zone->free_area[i].nr_free = 0;
 		INIT_LIST_HEAD(&zone->free_area[i].free_list);
 	}
-	printk("Init buddy with order %d\n", MAX_ORDER);
 }
 
 void pmm_free_pages(uint32_t page_number)
@@ -236,6 +236,6 @@ void pmm_free_pages(uint32_t page_number)
 	}
 
 	/* show buddy system status */
-	show_free_area(&sys_zone);
+	show_free_area();
 }
 

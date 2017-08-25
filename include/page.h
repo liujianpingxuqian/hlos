@@ -8,7 +8,7 @@
 #define PAGE_OFFSET 	  KERNBASE
 
 #define PAGE_SHIFT	(12)
-#define PAGE_SIZE	(1 << PAGE_SHIFT)
+#define PAGE_SIZE	(4096)
 #define PAGE_MASK	(~(PAGE_SIZE - 1))
 
 // 每个页表可以映射的内存数
@@ -40,6 +40,16 @@
 
 #define PG_RESERVED	0
 
+static inline uint32_t va_to_pa(uint32_t va)
+{
+	return va - KERNBASE;
+}
+
+static inline uint32_t pa_to_va(uint32_t pa)
+{
+	return pa + KERNBASE;
+}
+
 struct page {
 	uint16_t flags;
 	uint16_t private;
@@ -54,5 +64,6 @@ uint32_t page_to_pfn(struct page *page);
 /* API of buddy for page mangerment */
 void free_pages(struct page *page, uint16_t order);
 struct page *alloc_page(uint16_t order);
+void show_free_area(void);
 
 #endif

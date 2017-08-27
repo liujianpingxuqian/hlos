@@ -4,6 +4,7 @@
 #include <pmm.h>
 #include <string.h>
 #include <page.h>
+#include <slob.h>
 
 /* page frame arrary start at kernel end */
 static struct page *phy_pages;
@@ -30,14 +31,18 @@ uint32_t page_to_pfn(struct page *page)
 	return page - phy_pages;
 }
 
+/* physical memory address of page frame */
 uint32_t page_to_addr(struct page *page)
 {
-	return pa_to_va(min_phy_addr) + page_to_pfn(page) * PAGE_SIZE;
+	return min_phy_addr + page_to_pfn(page) * PAGE_SIZE;
 }
 
-struct page *addr_to_page(uint32_t va)
+/* page frame of physical memory address */
+struct page *addr_to_page(uint32_t pa)
 {
-	return pfn_to_page(((va_to_pa(va) & PAGE_MASK) - min_phy_addr) >> PAGE_SHIFT);
+	uint32_t pfn = ((pa & PAGE_MASK) - min_phy_addr) >> PAGE_SHIFT;
+
+	return pfn_to_page(pfn);
 }
 
 /* map all physical memory to kernel space */
@@ -113,5 +118,10 @@ void init_pmm()
 
 	/* reload kernel page map */
 	init_kernel_vmm(pte_pages);
+
+	/* init slob allocment */
+	slob_init();
+
+	//show_free_area();
 }
 

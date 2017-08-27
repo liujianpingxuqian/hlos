@@ -60,6 +60,8 @@ struct page {
 
 struct page *pfn_to_page(uint32_t pfn);
 uint32_t page_to_pfn(struct page *page);
+uint32_t page_to_addr(struct page *page);
+struct page *addr_to_page(uint32_t pa);
 
 /* API of buddy for page mangerment */
 void free_pages(struct page *page, uint16_t order);

@@ -236,6 +236,6 @@ void pmm_free_pages(uint32_t page_number)
 	}
 
 	/* show buddy system status */
-	show_free_area();
+	//show_free_area();
 }
 

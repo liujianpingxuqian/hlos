@@ -38,12 +38,11 @@ int kern_init()
 	show_kernel_memory_map();
 	show_memory_map();
 
-
 	init_pmm();
 
-	alloc_page(7);
-	alloc_page(5);
-	show_free_area();
+	//alloc_page(7);
+	//alloc_page(5);
+	//show_free_area();
 
 	//init_timer(200);
 

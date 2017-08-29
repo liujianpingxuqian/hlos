@@ -24,7 +24,27 @@
 #include <printk.h>
 #include <console.h>
 #include <page.h>
+#include <task.h>
 
+static inline void cpu_nop(void)
+{
+	__asm__ volatile ("nop");
+}
+
+static int task_B(void *arg)
+{
+	printk("\nThis is Task_B\n");
+
+	while(true) {
+		int i = 100000;
+
+		while(i-- > 0)
+			cpu_nop();
+		printk("X");
+	}
+
+	return 0;
+}
 
 int kern_init()
 {
@@ -40,17 +60,27 @@ int kern_init()
 
 	init_pmm();
 
+	/* set current execute-flow as a task */
+	task_init();
+
+	create_task(task_B, NULL);
 	//alloc_page(7);
 	//alloc_page(5);
 	//show_free_area();
 
-	//init_timer(200);
+	init_timer(200);
 
 	// 开启中断
-	//asm volatile ("sti");
+	asm volatile ("sti");
+
+	printk("\nThis is Task_A\n");
 
 	while(true) {
-		;
+		int i = 100000;
+
+		while(i-- > 0)
+			cpu_nop();
+		printk("O");
 	}
 
 	return 0;

@@ -73,6 +73,9 @@ typedef		__s64		int64_t;
 typedef uint32_t pgd_t;
 typedef uint32_t pte_t;
 
+/* task */
+typedef uint32_t pid_t;
+
 struct list_head {
 	struct list_head *prev, *next;
 };

@@ -150,7 +150,7 @@ void free_pages(struct page *page, uint16_t order)
 		__free_one_page(&sys_zone, page, order);
 }
 
-struct page *alloc_page(uint16_t order)
+struct page *alloc_pages(uint16_t order)
 {
 	struct page *page;
 

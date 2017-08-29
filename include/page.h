@@ -11,6 +11,11 @@
 #define PAGE_SIZE	(4096)
 #define PAGE_MASK	(~(PAGE_SIZE - 1))
 
+#define PFN_ALIGN(x)	(((uint32_t)(x) + (PAGE_SIZE -1)) & PAGE_MASK)
+#define PFN_UP(x)	(((uint32_t)(x) + PAGE_SIZE - 1) >> PAGE_SHIFT)
+#define PFN_DOWN(x)	((uint32_t)(x) >> PAGE_SHIFT)
+#define PFN_PHYS(x)	((uint32_t)(x) << PAGE_SHIFT)
+
 // 每个页表可以映射的内存数
 #define PAGE_MAP_SIZE 	  (0x400000)
 
@@ -40,14 +45,20 @@
 
 #define PG_RESERVED	0
 
-static inline uint32_t va_to_pa(uint32_t va)
+static inline uint32_t __pa(uint32_t x)
 {
-	return va - KERNBASE;
+	if (x == 0)
+		return 0;
+
+	return (x - KERNBASE);
 }
 
-static inline uint32_t pa_to_va(uint32_t pa)
+static inline void *__va(uint32_t x)
 {
-	return pa + KERNBASE;
+	if (x == 0)
+		return (void *)0;
+
+	return (void *)(x + KERNBASE);
 }
 
 struct page {
@@ -60,12 +71,16 @@ struct page {
 
 struct page *pfn_to_page(uint32_t pfn);
 uint32_t page_to_pfn(struct page *page);
-uint32_t page_to_addr(struct page *page);
-struct page *addr_to_page(uint32_t pa);
+void *page_address(struct page *page);
 
 /* API of buddy for page mangerment */
 void free_pages(struct page *page, uint16_t order);
-struct page *alloc_page(uint16_t order);
+struct page *alloc_pages(uint16_t order);
 void show_free_area(void);
+
+static inline struct page *alloc_page(void)
+{
+	return alloc_pages(0);
+}
 
 #endif

@@ -45,13 +45,11 @@ LIST_HEAD(slob_head);
 
 static void *__slob_alloc_pages(uint32_t order)
 {
-        uint32_t addr;
 	struct page *page;
 
-	page = alloc_page(order);
-	addr = page_to_addr(page);
+	page = alloc_pages(order);
 
-        return (void *)pa_to_va(addr);
+        return page_address(page);
 }
 
 static void slob_print(void)

@@ -26,7 +26,7 @@
 multiboot_t *glb_mboot_ptr;
 
 // 开启分页机制之后的内核栈
-uint8_t kern_stack[STACK_SIZE]  __attribute__ ((aligned(STACK_SIZE)));
+static uint8_t kern_stack[STACK_SIZE]  __attribute__ ((aligned(STACK_SIZE)));
 
 // 内核栈的栈顶
 uint32_t kern_stack_top = (uint32_t)kern_stack + STACK_SIZE;

@@ -32,17 +32,9 @@ uint32_t page_to_pfn(struct page *page)
 }
 
 /* physical memory address of page frame */
-uint32_t page_to_addr(struct page *page)
+void *page_address(struct page *page)
 {
-	return min_phy_addr + page_to_pfn(page) * PAGE_SIZE;
-}
-
-/* page frame of physical memory address */
-struct page *addr_to_page(uint32_t pa)
-{
-	uint32_t pfn = ((pa & PAGE_MASK) - min_phy_addr) >> PAGE_SHIFT;
-
-	return pfn_to_page(pfn);
+	return __va(min_phy_addr + PFN_PHYS(page_to_pfn(page)));
 }
 
 /* map all physical memory to kernel space */
@@ -52,18 +44,18 @@ static void init_kernel_vmm(uint32_t pte_pages)
 
 	pgd_idx = PGD_INDEX(PAGE_OFFSET);
 	for (idx = 0; idx < pte_pages; idx++) {
-		uint32_t pte_addr = (uint32_t)kern_pte + idx * PAGE_SIZE;
-		kern_pgd[pgd_idx + idx] = va_to_pa(pte_addr) | PAGE_PRESENT | PAGE_WRITE;
+		uint32_t pte_addr = (uint32_t)kern_pte + PFN_PHYS(idx);
+		kern_pgd[pgd_idx + idx] = __pa(pte_addr) | PAGE_PRESENT | PAGE_WRITE;
 
 		//printk("PGD_idx:%d map to PTE 0x%X\n", idx, pte_addr);
 	}
 
 	/* set page map to all memroy */
-	for (i = 0; i < (max_phy_addr >> PAGE_SHIFT); i++)
-		kern_pte[i] = (i<<PAGE_SHIFT) | PAGE_PRESENT | PAGE_WRITE;
+	for (i = 0; i < PFN_UP(max_phy_addr); i++)
+		kern_pte[i] =PFN_PHYS(i) | PAGE_PRESENT | PAGE_WRITE;
 
 	/* load new page map for kernel */
-	__asm__ volatile ("mov %0, %%cr3" : : "r" (va_to_pa((uint32_t)kern_pgd)));
+	__asm__ volatile ("mov %0, %%cr3" : : "r" (__pa((uint32_t)kern_pgd)));
 
 }
 
@@ -94,21 +86,20 @@ void init_pmm()
 	 */
 
 	/* one PAGE_SIZE for kern_pgd */
-	kern_pgd = (pgd_t *)((pa_to_va((uint32_t)kern_end) + PAGE_SIZE - 1) & PAGE_MASK);
+	kern_pgd = (pgd_t *)(__va(PFN_ALIGN(kern_end)));
 	/* pte_pages PAGE_SIZE for kern_pte */
 	kern_pte = (pte_t *)((uint32_t)kern_pgd + PAGE_SIZE);
-	pte_pages = ((max_phy_addr / PAGE_SIZE) + PTE_SIZE - 1)/PTE_SIZE;
+	pte_pages = (PFN_UP(max_phy_addr) + (PTE_SIZE - 1))/PTE_SIZE;
 
 	/* Page Frame array start at end of kernel PTE */
-	phy_pages = (struct page *)((uint32_t)kern_pte + pte_pages * PAGE_SIZE);
-	phy_page_count = (pa_to_va(max_phy_addr) - (uint32_t)phy_pages)/PAGE_SIZE;
-	pfn_pages = (phy_page_count * sizeof(struct page) + PAGE_SIZE -1)/PAGE_SIZE;
+	phy_pages = (struct page *)((uint32_t)kern_pte + (pte_pages << PAGE_SHIFT));
+	phy_page_count = (max_phy_addr - __pa((uint32_t)phy_pages)) >> PAGE_SHIFT;
+	pfn_pages = PFN_UP(phy_page_count * sizeof(struct page));
 	phy_page_count -= pfn_pages; /* remove Page Frame array memroy */
 
-	bzero(phy_pages, pfn_pages * PAGE_SIZE);
+	bzero(phy_pages, pfn_pages << PAGE_SHIFT);
 
-	min_phy_addr = (uint32_t)phy_pages + pfn_pages * PAGE_SIZE;
-	min_phy_addr = va_to_pa(min_phy_addr);
+	min_phy_addr = __pa((uint32_t)phy_pages) + PFN_PHYS(pfn_pages);
 
 	printk("Avriable Physic Memory 0x%08X ~~~ 0x%08X\n", min_phy_addr, max_phy_addr);
 	printk("Page Frame start 0x%08X with %d pages, total count %d\n", phy_pages, pfn_pages, phy_page_count);

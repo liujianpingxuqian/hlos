@@ -22,6 +22,20 @@ void task_init(void)
         list_add(&current->list, &task_list);
 }
 
+static void task_exit(void)
+{
+	int ret;
+
+	/* get return from task exit */
+	asm volatile ("mov %%eax, %0" : "=r" (ret));
+
+	current->state = TASK_ZOMBIE;
+	/* free pid */
+
+	/* kick out from cpu */
+	schedule();
+}
+
 struct task_struct *create_task(int (*fun)(void *), void *arg)
 {
 	struct page *page;
@@ -44,8 +58,9 @@ struct task_struct *create_task(int (*fun)(void *), void *arg)
 	/* make call status in stack, then return to this fun */
 	stack_top = (uint32_t *)task->stack;
 	*(--stack_top) = (uint32_t)arg;
+	*(--stack_top) = (uint32_t)task_exit;
 	*(--stack_top) = (uint32_t)fun;
-	*(--stack_top) = (uint32_t)0; /* ebp in stack due to C call */
+	*(--stack_top) = (uint32_t)task->stack; /* ebp in stack due to C call */
 	task->context.esp = (uint32_t)stack_top;
 	task->context.ebp = 0;
 	task->context.eflags = 0x200;
@@ -80,16 +95,30 @@ static void switch_to(struct context *prev, struct context *next)
 	return;
 }
 
+static inline bool task_is_runnable(struct task_struct *task)
+{
+	return task->state == TASK_RUNNABLE || task->state == TASK_RUNNING;
+}
+
 void schedule(void)
 {
+	bool found = false;
 	struct task_struct *task, *prev_task;
 
 	list_for_each_entry(task, &task_list, list) {
-		if (task == current || task->state != TASK_RUNNABLE)
-			continue;
-
-		prev_task = current;
-		current = task;
-		switch_to(&(prev_task->context), &(current->context));
+		/* choose another one could run */
+		if (task != current && task_is_runnable(task)) {
+			found = true;
+			break;
+		}
 	}
+
+	if (!found)
+		return;
+
+	list_del(&task->list);
+	prev_task = current;
+	current = task;
+	list_add_tail(&current->list, &task_list);
+	switch_to(&(prev_task->context), &(current->context));
 }

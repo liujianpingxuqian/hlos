@@ -33,6 +33,23 @@ static inline void cpu_nop(void)
 
 static int task_B(void *arg)
 {
+	int n = 1000;
+	printk("\nThis is Task_B\n");
+
+	while(n-- > 0) {
+		int i = 100000;
+
+		while(i-- > 0)
+			cpu_nop();
+		printk(".");
+	}
+	printk("\nThis is Task_B exit\n");
+
+	return 23;
+}
+
+static int task_C(void *arg)
+{
 	printk("\nThis is Task_B\n");
 
 	while(true) {
@@ -64,6 +81,7 @@ int kern_init()
 	task_init();
 
 	create_task(task_B, NULL);
+	create_task(task_C, NULL);
 	//alloc_page(7);
 	//alloc_page(5);
 	//show_free_area();

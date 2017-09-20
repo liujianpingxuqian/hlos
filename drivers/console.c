@@ -16,9 +16,8 @@
  * =====================================================================================
  */
 
+#include <io.h>
 #include <console.h>
-#include <common.h>
-#include <page.h>
 
 /*
  * VGA(Video Graphics Array，视频图形阵列)是使用模拟信号的一种视频传输标准，内核可以通过它来控制屏幕上字符或者图形的显示。
@@ -27,19 +26,24 @@
  *
  */
 
+// 屏幕"光标"的坐标
+static uint8_t xpos = 0;
+static uint8_t ypos = 0;
+static uint8_t max_xpos = 80;
+static uint8_t max_ypos = 25;
+
+/* kernel virtual memroy map here */
+#define PAGE_OFFSET	(0xC0000000)
+
 // VGA 的显示缓冲的起点是 0xB8000
 // add PAGE_OFFSET for var_addr about VGA access
 static uint16_t *video_memory = (uint16_t *)(0xB8000 + PAGE_OFFSET);
-
-// 屏幕"光标"的坐标
-static uint8_t cursor_x = 0;
-static uint8_t cursor_y = 0;
 
 // 移动光标
 static void move_cursor()
 {
 	// 屏幕是 80 字节宽
-	uint16_t cursorLocation = cursor_y * 80 + cursor_x;
+	uint16_t cursorLocation = ypos * 80 + xpos;
 	
 	// VGA 内部的寄存器多达300多个，显然无法一一映射到I/O端口的地址空间。
 	// 对此 VGA 控制器的解决方案是，将一个端口作为内部寄存器的索引：0x3D4，
@@ -52,150 +56,71 @@ static void move_cursor()
 	outb(0x3D5, cursorLocation);     	// 发送低 8 位
 }
 
-// 屏幕滚动操作
-static void scroll()
-{
-	// attribute_byte 被构造出一个黑底白字的描述格式
-	uint8_t attribute_byte = (0 << 4) | (15 & 0x0F);
-	uint16_t blank = 0x20 | (attribute_byte << 8);  // space 是 0x20
-
-	// cursor_y 到 25 的时候，就该换行了
-	if (cursor_y >= 25) {
-		// 将所有行的显示数据复制到上一行，第一行永远消失了...
-		int i;
-		for (i = 0 * 80; i < 24 * 80; i++) {
-		      video_memory[i] = video_memory[i+80];
-		}
-
-		// 最后的一行数据现在填充空格，不显示任何字符
-		for (i = 24 * 80; i < 25 * 80; i++) {
-		      video_memory[i] = blank;
-		}
-
-		// 向上移动了一行，所以 cursor_y 现在是 24
-		cursor_y = 24;
-	}
-}
-
 // 清屏操作
-void console_clear()
+void console_init(void)
 {
-	uint8_t attribute_byte = (0 << 4) | (15 & 0x0F);
-	uint16_t blank = 0x20 | (attribute_byte << 8);
-
 	int i;
-	for (i = 0; i < 80 * 25; i++) {
-	      video_memory[i] = blank;
+
+	for (i = 0; i < max_xpos * max_ypos; i++) {
+	      video_memory[i] = 0x720;
 	}
 
-	cursor_x = 0;
-	cursor_y = 0;
+	xpos = 0;
+	ypos = 0;
 	move_cursor();
 }
 
-// 屏幕输出一个字符(带颜色)
-void console_putc_color(char c, real_color_t back, real_color_t fore)
+void console_vga_write(const char *str, unsigned n)
 {
-	uint8_t back_color = (uint8_t)back;
-	uint8_t fore_color = (uint8_t)fore;
+	char c;
+	int  i, k, j;
 
-	uint8_t attribute_byte = (back_color << 4) | (fore_color & 0x0F);
-	uint16_t attribute = attribute_byte << 8;
-
-	// 0x08 是 退格键 的 ASCII 码
-	// 0x09 是 tab 键 的 ASCII 码
-	if (c == 0x08 && cursor_x) {
-	      cursor_x--;
-	} else if (c == 0x09) {
-	      cursor_x = (cursor_x+8) & ~(8-1);
-	} else if (c == '\r') {
-	      cursor_x = 0;
-	} else if (c == '\n') {
-		cursor_x = 0;
-		cursor_y++;
-	} else if (c >= ' ') {
-		video_memory[cursor_y*80 + cursor_x] = c | attribute;
-		cursor_x++;
+	while ((c = *str++) != '\0' && n-- > 0) {
+		if (ypos >= max_ypos) {
+			/* scroll 1 line up */
+			for (k = 1, j = 0; k < max_ypos; k++, j++) {
+				for (i = 0; i < max_xpos; i++) {
+					video_memory[max_xpos*j+i] = video_memory[max_xpos*k+i];
+				}
+			}
+			for (i = 0; i < max_xpos; i++)
+				video_memory[max_xpos*j+i] = 0x720;
+			ypos = max_ypos-1;
+		}
+		if (c == '\n') {
+			xpos = 0;
+			ypos++;
+		} else if (c != '\r')  {
+			video_memory[max_xpos*ypos+xpos] = (0x7 << 8) | (unsigned short) c;
+			xpos++;
+			if (xpos >= max_xpos) {
+				xpos = 0;
+				ypos++;
+			}
+		}
 	}
 
-	// 每 80 个字符一行，满80就必须换行了
-	if (cursor_x >= 80) {
-		cursor_x = 0;
-		cursor_y ++;
-	}
-
-	// 如果需要的话滚动屏幕显示
-	scroll();
-
-	// 移动硬件的输入光标
 	move_cursor();
 }
 
-// 屏幕打印一个以 \0 结尾的字符串(默认黑底白字)
-void console_write(char *cstr)
+/* debug printout for arch */
+#include <stdargs.h>
+#include <printk.h>
+#define LOG_LINE_MAX	1024
+
+int printk(const char *fmt, ...)
 {
-	while (*cstr) {
-	      console_putc_color(*cstr++, rc_black, rc_white);
-	}
-}
+	static char textbuf[LOG_LINE_MAX];
+	char *text = textbuf;
+	size_t text_len;
+	va_list args;
 
-// 屏幕打印一个以 \0 结尾的字符串(带颜色)
-void console_write_color(char *cstr, real_color_t back, real_color_t fore)
-{
-	while (*cstr) {
-	      console_putc_color(*cstr++, back, fore);
-	}
-}
+	va_start(args, fmt);
+	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+	va_end(args);
 
-// 屏幕输出一个十六进制的整型数
-void console_write_hex(uint32_t n, real_color_t back, real_color_t fore)
-{
-	int tmp;
-	char noZeroes = 1;
+	console_vga_write(text, text_len);
 
-	console_write_color("0x", back, fore);
-
-	int i;
-	for (i = 28; i >= 0; i -= 4) {
-		tmp = (n >> i) & 0xF;
-		if (tmp == 0 && noZeroes != 0) {
-		      continue;
-		}
-		noZeroes = 0;
-		if (tmp >= 0xA) {
-		      console_putc_color(tmp-0xA+'a', back, fore);
-		} else {
-		      console_putc_color(tmp+'0', back, fore);
-		}
-	}
-}
-
-// 屏幕输出一个十进制的整型数
-void console_write_dec(uint32_t n, real_color_t back, real_color_t fore)
-{
-	if (n == 0) {
-		console_putc_color('0', back, fore);
-		return;
-	}
-
-	uint32_t acc = n;
-	char c[32];
-	int i = 0;
-	while (acc > 0) {
-		c[i] = '0' + acc % 10;
-		acc /= 10;
-		i++;
-	}
-	c[i] = 0;
-
-	char c2[32];
-	c2[i--] = 0;
-
-	int j = 0;
-	while(i >= 0) {
-	      c2[i--] = c[j++];
-	}
-
-	console_write_color(c2, back, fore);
+	return text_len;
 }
 

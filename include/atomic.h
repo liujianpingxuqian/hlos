@@ -1,8 +1,5 @@
-
 #ifndef ATOMIC_H_
 #define ATOMIC_H_
-
-#include <types.h>
 
 #define LOCK_PREFIX "lock;"
 
@@ -13,26 +10,26 @@ static inline int32_t atomic_read(const atomic_t *v)
         return v->counter;
 }
 
-static inline void atomic_set(atomic_t *v, int32_t i)
+static inline void atomic_set(atomic_t *v, int i)
 {
         v->counter = i;
 }
 
-static inline void atomic_add(atomic_t *v, int32_t i)
+static inline void atomic_add(atomic_t *v, int i)
 {
         __asm__ volatile(LOCK_PREFIX "addl %1,%0"
                      : "+m" (v->counter)
                      : "ir" (i));
 }
 
-static inline void atomic_sub(atomic_t *v, int32_t i)
+static inline void atomic_sub(atomic_t *v, int i)
 {
         __asm__ volatile(LOCK_PREFIX "subl %1,%0"
                      : "+m" (v->counter)
                      : "ir" (i));
 }
 
-static inline int32_t atomic_sub_and_test(atomic_t *v, int32_t i)
+static inline int atomic_sub_and_test(atomic_t *v, int i)
 {
         unsigned char c;
 
@@ -48,7 +45,7 @@ static inline void atomic_inc(atomic_t *v)
                      : "+m" (v->counter));
 }
 
-static inline int32_t atomic_inc_and_test(atomic_t *v)
+static inline int atomic_inc_and_test(atomic_t *v)
 {
         unsigned char c;
 
@@ -64,7 +61,7 @@ static inline void atomic_dec(atomic_t *v)
                      : "+m" (v->counter));
 }
 
-static inline int32_t atomic_dec_and_test(atomic_t *v)
+static inline int atomic_dec_and_test(atomic_t *v)
 {
         unsigned char c;
 

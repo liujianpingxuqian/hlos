@@ -8,13 +8,25 @@
 #define PAGE_OFFSET 	  KERNBASE
 
 #define PAGE_SHIFT	(12)
-#define PAGE_SIZE	(4096)
+#define PAGE_SIZE	(1UL << PAGE_SHIFT)
 #define PAGE_MASK	(~(PAGE_SIZE - 1))
 
 #define PFN_ALIGN(x)	(((uint32_t)(x) + (PAGE_SIZE -1)) & PAGE_MASK)
 #define PFN_UP(x)	(((uint32_t)(x) + PAGE_SIZE - 1) >> PAGE_SHIFT)
 #define PFN_DOWN(x)	((uint32_t)(x) >> PAGE_SHIFT)
 #define PFN_PHYS(x)	((uint32_t)(x) << PAGE_SHIFT)
+
+typedef struct { unsigned long pte_low;	} pte_t;
+typedef struct { unsigned long pgd;     } pgd_t;
+typedef struct { unsigned long pgprot;  } pgprot_t;
+
+#define pgd_val(x)	   ((x).pgd)
+#define pte_val(x)	   ((x).pte_low)
+#define pgprot_val(x)	   ((x).pgprot)
+#define __pte(x) ((pte_t)  { (x) } )
+#define __pgd(x) ((pgd_t)  { (x) } )
+#define __pgprot(x)	   ((pgprot_t) { (x) } )
+
 
 // 每个页表可以映射的内存数
 #define PAGE_MAP_SIZE 	  (0x400000)
@@ -59,28 +71,6 @@ static inline void *__va(uint32_t x)
 		return (void *)0;
 
 	return (void *)(x + KERNBASE);
-}
-
-struct page {
-	uint16_t flags;
-	uint16_t private;
-	atomic_t  _count;
-	atomic_t _mapcount;
-	struct list_head lru;
-};
-
-struct page *pfn_to_page(uint32_t pfn);
-uint32_t page_to_pfn(struct page *page);
-void *page_address(struct page *page);
-
-/* API of buddy for page mangerment */
-void free_pages(struct page *page, uint16_t order);
-struct page *alloc_pages(uint16_t order);
-void show_free_area(void);
-
-static inline struct page *alloc_page(void)
-{
-	return alloc_pages(0);
 }
 
 #endif

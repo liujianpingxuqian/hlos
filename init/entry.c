@@ -18,10 +18,9 @@
 
 #include <gdt.h>
 #include <idt.h>
+#include <ksym.h>
 #include <timer.h>
-#include <pmm.h>
-#include <debug.h>
-#include <printk.h>
+//#include <pmm.h>
 #include <console.h>
 #include <page.h>
 #include <task.h>
@@ -68,20 +67,17 @@ int kern_init()
 	init_gdt();
 	init_idt();
 
-	console_clear();
-	init_debug();
+	console_init();
+	load_ksym();
 	printk("Hello, OS kernel!\n");
-
-	show_kernel_memory_map();
-	show_memory_map();
 
 	init_pmm();
 
 	/* set current execute-flow as a task */
-	task_init();
+	//task_init();
 
-	create_task(task_B, NULL);
-	create_task(task_C, NULL);
+	//create_task(task_B, NULL);
+	//create_task(task_C, NULL);
 	//alloc_page(7);
 	//alloc_page(5);
 	//show_free_area();
@@ -90,6 +86,7 @@ int kern_init()
 
 	// 开启中断
 	asm volatile ("sti");
+	while(true);
 
 	printk("\nThis is Task_A\n");
 

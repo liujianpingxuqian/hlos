@@ -16,17 +16,17 @@
  * =====================================================================================
  */
 
-#include <timer.h>
-#include <printk.h>
-#include <common.h>
+#include <io.h>
 #include <idt.h>
+#include <timer.h>
+#include <console.h>
 
 void timer_callback(pt_regs *regs)
 {
-	//static uint32_t tick = 0;
-	//printk("\nTick: %d\n", tick++);
+	static uint32_t tick = 0;
+	printk("\nTick: %d\n", tick++);
 
-	schedule();
+	//schedule();
 }
 
 void init_timer(uint32_t frequency)

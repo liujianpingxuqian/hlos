@@ -16,7 +16,7 @@
  * =====================================================================================
  */
 
-#include <common.h>
+#include <io.h>
 #include <string.h>
 #include <printk.h>
 #include <idt.h>

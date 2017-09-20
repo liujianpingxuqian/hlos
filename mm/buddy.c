@@ -1,8 +1,8 @@
-#include <printk.h>
 #include <list.h>
 #include <atomic.h>
 #include <page.h>
 #include <mm.h>
+#include <console.h>
 
 #define MAX_ORDER	11
 
@@ -236,6 +236,6 @@ void pmm_free_pages(uint32_t page_number)
 	}
 
 	/* show buddy system status */
-	//show_free_area();
+	show_free_area();
 }
 

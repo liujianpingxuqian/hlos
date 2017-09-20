@@ -36,9 +36,9 @@ extern int kern_init();
 
 /* tmp in section .init.data */
 extern multiboot_t *mboot_ptr_tmp;
-extern pgd_t *pgd_tmp;
-extern pte_t *pte_low;
-extern pte_t *pte_high;
+extern uint32_t *pgd_tmp;
+extern uint32_t *pte_low;
+extern uint32_t *pte_high;
 
 // 内核使用的临时页表和页目录
 // 该地址必须是页对齐的地址，内存 0-640KB 肯定是空闲的

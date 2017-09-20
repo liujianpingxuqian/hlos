@@ -21,7 +21,6 @@
 
 #include <string.h>
 #include <ctype.h>
-#include <debug.h>
 #include <errno.h>
 
 /**
@@ -193,7 +192,7 @@ size_t strlcat(char *dest, const char *src, size_t count)
 	size_t res = dsize + len;
 
 	/* This would be a bug */
-	BUG_ON(dsize >= count);
+	//BUG_ON(dsize >= count);
 
 	dest += dsize;
 	count -= dsize;

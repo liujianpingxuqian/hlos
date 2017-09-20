@@ -21,12 +21,8 @@
 
 #include <types.h>
 
-// 初始化中断描述符表
-void init_idt();
-
 // 中断描述符
-typedef
-struct idt_entry_t {
+typedef struct idt_entry_t {
 	uint16_t base_lo;        // 中断处理函数地址 15～0 位
 	uint16_t sel;            // 目标代码段描述符选择子
 	uint8_t  always0;        // 置 0 段
@@ -35,15 +31,13 @@ struct idt_entry_t {
 }__attribute__((packed)) idt_entry_t;
 
 // IDTR
-typedef
-struct idt_ptr_t {
+typedef struct idt_ptr_t {
 	uint16_t limit; 	// 限长
 	uint32_t base; 		// 基址
 } __attribute__((packed)) idt_ptr_t;
 
 // 寄存器类型
-typedef
-struct pt_regs_t {
+typedef struct pt_regs_t {
 	uint32_t ds;		// 用于保存用户的数据段描述符
 	uint32_t edi; 		// 从 edi 到 eax 由 pusha 指令压入
 	uint32_t esi; 
@@ -61,12 +55,6 @@ struct pt_regs_t {
 	uint32_t useresp;
 	uint32_t ss;
 } pt_regs;
-
-// 定义中断处理函数指针
-typedef void (*interrupt_handler_t)(pt_regs *);
-
-// 注册一个中断处理函数
-void register_interrupt_handler(uint8_t n, interrupt_handler_t h);
 
 // 调用中断处理函数
 void isr_handler(pt_regs *regs);
@@ -150,5 +138,14 @@ void irq12(); 		// 接 PS/2 鼠标，也可设定给其他硬件
 void irq13(); 		// 协处理器使用
 void irq14(); 		// IDE0 传输控制使用
 void irq15(); 		// IDE1 传输控制使用
+
+// 初始化中断描述符表
+void init_idt();
+
+// 定义中断处理函数指针
+typedef void (*interrupt_handler_t)(pt_regs *);
+
+// 注册一个中断处理函数
+void register_interrupt_handler(uint8_t n, interrupt_handler_t h);
 
 #endif 	// INCLUDE_IDT_H_

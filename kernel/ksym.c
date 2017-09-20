@@ -1,54 +1,33 @@
-/*
- * =====================================================================================
- *
- *       Filename:  elf.c
- *
- *    Description:  ELF 格式解析相关函数
- *
- *        Version:  1.0
- *        Created:  2013年11月06日 12时51分24秒
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  Hurley (LiuHuan), liuhuan1992@gmail.com
- *        Company:  Class 1107 of Computer Science and Technology
- *
- * =====================================================================================
- */
-
-#include <pmm.h>
+#include <types.h>
+#include <ksym.h>
 #include <string.h>
 #include <multiboot.h>
-#include <debug.h>
-#include <printk.h>
-#include <page.h>
+#include <console.h>
 
 #define ELF32_ST_TYPE(i) ((i)&0xf)
 
 // ELF 格式区段头
-typedef
-struct elf_section_header_t {
-  uint32_t name;
-  uint32_t type;
-  uint32_t flags;
-  uint32_t addr;
-  uint32_t offset;
-  uint32_t size;
-  uint32_t link;
-  uint32_t info;
-  uint32_t addralign;
-  uint32_t entsize;
+typedef struct elf_section_header_t {
+	uint32_t name;
+	uint32_t type;
+	uint32_t flags;
+	uint32_t addr;
+	uint32_t offset;
+	uint32_t size;
+	uint32_t link;
+	uint32_t info;
+	uint32_t addralign;
+	uint32_t entsize;
 } __attribute__((packed)) elf_section_header_t;
 
 // ELF 格式符号
-typedef
-struct elf_symbol_t {
-  uint32_t name;
-  uint32_t value;
-  uint32_t size;
-  uint8_t  info;
-  uint8_t  other;
-  uint16_t shndx;
+typedef struct elf_symbol_t {
+	uint32_t name;
+	uint32_t value;
+	uint32_t size;
+	uint8_t  info;
+	uint8_t  other;
+	uint16_t shndx;
 } __attribute__((packed)) elf_symbol_t;
 
 
@@ -57,6 +36,12 @@ static unsigned int kallsyms_num;
 static uint32_t kallsyms_addr[KALLSYMS_NUM_MAX];
 static uint32_t kallsyms_name[KALLSYMS_NUM_MAX];
 
+/* defined in linker script */
+extern uint8_t kern_text_start[];
+extern uint8_t kern_text_end[];
+/* kernel virtual memroy map here */
+#define PAGE_OFFSET	(0xC0000000)
+
 static bool is_kernel_text(uint32_t addr)
 {
 	if (addr > (uint32_t)kern_text_start + PAGE_OFFSET && addr < (uint32_t)kern_text_end + PAGE_OFFSET)
@@ -64,6 +49,7 @@ static bool is_kernel_text(uint32_t addr)
 
 	return false;
 }
+
 // 从 multiboot_t 结构获取ELF信息
 static void load_ksym_from_multiboot(multiboot_t *mb)
 {
@@ -74,20 +60,20 @@ static void load_ksym_from_multiboot(multiboot_t *mb)
 	/* offset of section header name strings table */
 	uint32_t shstrtab = sh[mb->shndx].addr + PAGE_OFFSET;
 
-	printk("ELE Header: 0x%08X, STRTAB: 0x%08X\n", sh, shstrtab);
+	//printk("ELE Header: 0x%08X, STRTAB: 0x%08X\n", sh, shstrtab);
 
 	for (i = 0; i < mb->num; i++) {
 		const char *name = (const char *)(shstrtab + sh[i].name);
 		// 在 GRUB 提供的 multiboot 信息中寻找内核 ELF 格式所提取的字符串表和符号表
 		if (strcmp(name, ".strtab") == 0) {
 			strtab_offset = (const char *)sh[i].addr + PAGE_OFFSET;
-			printk("ELF STRTAB offset 0x%08X\n", strtab_offset);
+			//printk("ELF STRTAB offset 0x%08X\n", strtab_offset);
 		}
 
 		if (strcmp(name, ".symtab") == 0) {
 			ksymtab = (elf_symbol_t *)(sh[i].addr + PAGE_OFFSET);
 			symtab_size = sh[i].size / sizeof(elf_symbol_t);
-			printk("ELF KSYMTAB offset 0x%08X, size 0x%X\n", ksymtab, symtab_size);
+			//printk("ELF KSYMTAB offset 0x%08X, size 0x%X\n", ksymtab, symtab_size);
 		}
 	}
 
@@ -100,7 +86,7 @@ static void load_ksym_from_multiboot(multiboot_t *mb)
 			kallsyms_num ++;
 		}
 	}
-	printk("ksym_num %d\n", kallsyms_num);
+	//printk("ksym_num %d\n", kallsyms_num);
 	
 	/* sort symbol address */
 	for (i = 0; i < kallsyms_num; i++) {
@@ -165,7 +151,7 @@ static const char *ksym_lookup_name(uint32_t addr, uint32_t *offset)
 	return (const char *)kallsyms_name[idx];
 }
 
-static void print_stack_trace()
+void print_stack_trace()
 {
 	uint32_t *ebp, *eip;
 
@@ -177,72 +163,9 @@ static void print_stack_trace()
 	}
 }
 
-/* Debug API bellow */
-void init_debug()
+void load_ksym(void)
 {
 	// 从 GRUB 提供的信息中获取到内核符号表和代码地址信息
 	load_ksym_from_multiboot(glb_mboot_ptr);
-}
-
-void print_cur_status()
-{
-	static int round = 0;
-	uint16_t reg1, reg2, reg3, reg4;
-
-	asm volatile ( 	"mov %%cs, %0;"
-			"mov %%ds, %1;"
-			"mov %%es, %2;"
-			"mov %%ss, %3;"
-			: "=m"(reg1), "=m"(reg2), "=m"(reg3), "=m"(reg4));
-
-	// 打印当前的运行级别
-	printk("%d: @ring %d\n", round, reg1 & 0x3);
-	printk("%d:  cs = %x\n", round, reg1);
-	printk("%d:  ds = %x\n", round, reg2);
-	printk("%d:  es = %x\n", round, reg3);
-	printk("%d:  ss = %x\n", round, reg4);
-	++round;
-}
-
-void panic(const char *msg)
-{
-	printk("*** System panic: %s\n", msg);
-	print_stack_trace();
-	printk("***\n");
-
-	// 致命错误发生后打印栈信息后停止在这里
-	while(1);
-}
-
-void show_kernel_memory_map(void)
-{
-        printk("kernel in memory start: 0x%08X\n", kern_start);
-	printk("kernel in memory end:   0x%08X\n", kern_end);
-        
-	printk("\nkernel segment in memory:\n");
-	printk("  .init.text    0x%08X ~ 0x%08X \n", kern_init_text_start, kern_init_text_end);
-	printk("  .init.data    0x%08X ~ 0x%08X \n", kern_init_data_start, kern_init_data_end);
-	printk("  .text         0x%08X ~ 0x%08X \n", kern_text_start, kern_text_end);
-	printk("  .data         0x%08X ~ 0x%08X \n", kern_data_start, kern_data_end);
-        
-	printk("\nkernel in memory used: %d KB = %d Pages\n\n",
-                        (kern_end - kern_start) / 1024, (kern_end - kern_start) / 1024 / 4);
-}
-
-void show_memory_map(void)
-{
-        uint32_t mmap_addr = glb_mboot_ptr->mmap_addr;
-        uint32_t mmap_length = glb_mboot_ptr->mmap_length;
-
-        printk("Memory map:\n\n");
-
-        mmap_entry_t *mmap = (mmap_entry_t *)mmap_addr;
-        for (mmap = (mmap_entry_t *)mmap_addr; (uint32_t)mmap < mmap_addr + mmap_length; mmap++) {
-                printk("base_addr = 0x%X%08X, length = 0x%X%08X, type = 0x%X\n",
-                        (uint32_t)mmap->base_addr_high, (uint32_t)mmap->base_addr_low,
-                        (uint32_t)mmap->length_high, (uint32_t)mmap->length_low,
-                        (uint32_t)mmap->type);
-        }
-        printk("\n");
 }
 

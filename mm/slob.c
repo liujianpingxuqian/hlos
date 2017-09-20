@@ -105,7 +105,7 @@ void slob_init(void)
         block->length = (1 << SLOB_PAGE_ORDER) * PAGE_SIZE - sizeof(slob_block_t);
         list_add(&block->list, &slob_head);
 
-        //slob_test();
+        slob_test();
 }
 
 // 切分内存块

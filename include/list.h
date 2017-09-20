@@ -3,6 +3,7 @@
 #define _INCLUDE_LIST_H
 
 #include <types.h>
+#include <stddef.h>
 
 #define LIST_HEAD_INIT(name) { &(name), &(name) }
 

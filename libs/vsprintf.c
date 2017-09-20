@@ -1,7 +1,6 @@
 #include <ctype.h>
 #include <string.h>
 #include <printk.h>
-#include <console.h>
 
 #define noinline_for_stack
 
@@ -695,23 +694,5 @@ int vscnprintf(char *buf, size_t size, const char *fmt, va_list args)
 	if (size != 0)
 		return size - 1;
 	return 0;
-}
-
-#define LOG_LINE_MAX	1024
-
-int printk(const char *fmt, ...)
-{
-	static char textbuf[LOG_LINE_MAX];
-	char *text = textbuf;
-	size_t text_len;
-	va_list args;
-
-	va_start(args, fmt);
-	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
-	va_end(args);
-
-	console_write(text);
-
-	return text_len;
 }
 

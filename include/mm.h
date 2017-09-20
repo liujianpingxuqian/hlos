@@ -6,6 +6,14 @@
 
 #include <atomic.h>
 
+struct page {
+	uint16_t flags;
+	uint16_t private;
+	atomic_t  _count;
+	atomic_t _mapcount;
+	struct list_head lru;
+};
+
 /*
  * Setup the page count before being freed into the page allocator for
  * the first time (boot or memory hotplug)
@@ -70,5 +78,18 @@ static inline void __ClearPageBuddy(struct page *page)
 {
 	atomic_set(&page->_mapcount, -1);
 }
+
+void *page_address(struct page *page);
+struct page *pfn_to_page(uint32_t pfn);
+uint32_t page_to_pfn(struct page *page);
+
+void free_pages(struct page *page, uint16_t order);
+struct page *alloc_pages(uint16_t order);
+
+static inline struct page *alloc_page(void)
+{
+	return alloc_pages(0);
+}
+
 
 #endif
